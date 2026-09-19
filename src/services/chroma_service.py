@@ -203,12 +203,20 @@ class ChromaService:
     def clear_collection(self) -> bool:
         """Clear all entries from the lorebook collection."""
         try:
-            self.client.delete_collection(name=self.collection_name)
-            self._ensure_collection()
-            return True
-        except Exception as e:
-            logger.error(f"Error clearing collection {self.collection_name}: {e}")
+            if self.collection is not None:
+                items = self.collection.get()
+                if items and "ids" in items and items["ids"]:
+                    self.collection.delete(ids=items["ids"])
+                return True
             return False
+        except Exception:
+            try:
+                self.client.delete_collection(name=self.collection_name)
+                self._ensure_collection()
+                return True
+            except Exception as e:
+                logger.error(f"Error clearing collection {self.collection_name}: {e}")
+                return False
 
     def count(self) -> int:
         """Return total count of lore entries."""
