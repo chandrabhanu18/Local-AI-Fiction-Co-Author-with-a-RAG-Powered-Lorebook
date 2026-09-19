@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MythosAI — Local Fiction Co-Author & RAG Lorebook Studio</title>
+    <meta name="description" content="A local, private AI fiction co-author powered by Ollama LLMs and ChromaDB RAG Lorebook.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Top Navigation Header -->
+        <header class="studio-header">
+            <div class="brand">
+                <div class="brand-icon">✨</div>
+                <div>
+                    <h1>Mythos<span class="brand-highlight">AI</span></h1>
+                    <p class="brand-tagline">Local Fiction Co-Author Studio</p>
+                </div>
+            </div>
+
+            <!-- Global Status Bar -->
+            <div class="status-bar">
+                <div class="status-badge" id="chromaStatusBadge" title="ChromaDB Connection">
+                    <span class="status-dot"></span>
+                    <span class="status-label">ChromaDB:</span>
+                    <span class="status-val" id="chromaStatusText">Checking...</span>
+                </div>
+                <div class="status-badge" id="ollamaStatusBadge" title="Ollama LLM Engine">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Ollama:</span>
+                    <span class="status-val" id="ollamaStatusText">Checking...</span>
+                </div>
+                <div class="model-selector-container">
+                    <span class="model-label">Model:</span>
+                    <select id="modelSelector" class="custom-select">
+                        <option value="llama3.1:8b">llama3.1:8b (Default)</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Studio Grid -->
+        <main class="studio-main">
+            <!-- Left Panel: Lorebook Management -->
+            <aside class="panel lore-panel">
+                <div class="panel-header">
+                    <div class="panel-title-group">
+                        <span class="panel-icon">📜</span>
+                        <h2>Story Lorebook</h2>
+                    </div>
+                    <span class="badge" id="loreCountBadge">0 entries</span>
+                </div>
+
+                <!-- Quick Lore Creator -->
+                <div class="lore-creator-card">
+                    <h3>Add Canon Entry</h3>
+                    <textarea id="loreContentInput" placeholder="e.g. The ancient blade Aethelgard glows with a faint blue light when danger is near..." rows="3"></textarea>
+                    
+                    <div class="lore-meta-row">
+                        <input type="text" id="loreCategoryInput" placeholder="Tag: e.g. Character, Weapon, Kingdom" class="tag-input" />
+                        <button id="addLoreBtn" class="btn btn-primary btn-sm">
+                            <span>Add Lore</span> ➔
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lore Controls & Quick Actions -->
+                <div class="lore-actions-row">
+                    <input type="text" id="loreSearchInput" placeholder="Filter canon notes..." class="search-input" />
+                    <button id="seedSampleLoreBtn" class="btn btn-secondary btn-sm" title="Load sample fantasy canon">Seed Sample Canon</button>
+                    <button id="clearLoreBtn" class="btn btn-danger-subtle btn-sm" title="Clear all canon entries">Clear</button>
+                </div>
+
+                <!-- Lore List Display -->
+                <div class="lore-list" id="loreListContainer">
+                    <div class="empty-state">
+                        <p>No canon entries yet. Add worldbuilding notes or click <strong>Seed Sample Canon</strong> to get started.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center Panel: Manuscript Writing Editor -->
+            <section class="panel editor-panel">
+                <div class="panel-header">
+                    <div class="panel-title-group">
+                        <span class="panel-icon">✍️</span>
+                        <h2>Manuscript Editor</h2>
+                    </div>
+                    <div class="editor-metrics">
+                        <span id="wordCount">0 words</span>
+                        <span class="metric-divider">|</span>
+                        <span id="charCount">0 characters</span>
+                    </div>
+                </div>
+
+                <!-- Story Textarea -->
+                <div class="manuscript-container">
+                    <div id="manuscriptText" class="manuscript-textarea" contenteditable="true" spellcheck="false" placeholder="Write the opening lines of your story here, or provide a scene prompt below..."></div>
+                </div>
+
+                <!-- Prompt Bar & Generation Controls -->
+                <div class="generation-dock">
+                    <div class="prompt-input-wrapper">
+                        <textarea id="promptInput" rows="2" placeholder="Describe what happens next (e.g. The hero unsheathes his glowing blade and steps into the crypt)..."></textarea>
+                        <div class="prompt-quick-tags">
+                            <span class="quick-prompt" data-prompt="Describe the surrounding environment with rich sensory atmosphere.">Atmosphere</span>
+                            <span class="quick-prompt" data-prompt="A sudden conflict or unexpected confrontation erupts.">Confrontation</span>
+                            <span class="quick-prompt" data-prompt="Reveal a secret lore connection or ancient memory.">Lore Reveal</span>
+                            <span class="quick-prompt" data-prompt="Engage in a sharp, tense dialogue exchange.">Dialogue</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons-row">
+                        <div class="stream-toggle-container">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="streamToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="toggle-label">Token Streaming</span>
+                        </div>
+
+                        <div class="btn-group">
+                            <button id="clearStoryBtn" class="btn btn-secondary">Clear Story</button>
+                            <button id="generateBtn" class="btn btn-accent">
+                                <span class="btn-icon">⚡</span>
+                                <span id="generateBtnText">Co-Author Next Scene</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Parameters & Context Inspector -->
+            <aside class="panel inspector-panel">
+                <div class="tab-header">
+                    <button class="tab-btn active" data-tab="paramsTab">Parameters</button>
+                    <button class="tab-btn" data-tab="contextTab">RAG Context</button>
+                    <button class="tab-btn" data-tab="personaTab">Persona</button>
+                </div>
+
+                <!-- Tab 1: Hyperparameter Controls -->
+                <div class="tab-pane active" id="paramsTab">
+                    <div class="preset-section">
+                        <label class="section-label">Writing Presets</label>
+                        <div class="preset-chips">
+                            <button class="chip active" data-temp="0.7" data-topp="0.9" data-rep="1.1">Balanced Fantasy</button>
+                            <button class="chip" data-temp="0.4" data-topp="0.75" data-rep="1.15">Tight Mystery</button>
+                            <button class="chip" data-temp="1.2" data-topp="0.95" data-rep="1.1">Surreal / Mythic</button>
+                            <button class="chip" data-temp="0.65" data-topp="0.85" data-rep="1.2">Fast Dialogue</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="tempSlider">Temperature (Randomness)</label>
+                            <span class="val-display" id="tempVal">0.70</span>
+                        </div>
+                        <input type="range" id="tempSlider" min="0.0" max="2.0" step="0.05" value="0.70">
+                        <p class="control-hint">Lower = focused & predictable; Higher = creative & varied.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="topPSlider">Top P (Nucleus Sampling)</label>
+                            <span class="val-display" id="topPVal">0.90</span>
+                        </div>
+                        <input type="range" id="topPSlider" min="0.05" max="1.0" step="0.05" value="0.90">
+                        <p class="control-hint">Bounds the candidate vocabulary pool based on cumulative probability.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="repPenaltySlider">Repeat Penalty</label>
+                            <span class="val-display" id="repPenaltyVal">1.10</span>
+                        </div>
+                        <input type="range" id="repPenaltySlider" min="1.0" max="2.0" step="0.05" value="1.10">
+                        <p class="control-hint">Prevents repetitive sentence patterns, clichés, and loops.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="topKSlider">Lore Context Top-K</label>
+                            <span class="val-display" id="topKVal">3</span>
+                        </div>
+                        <input type="range" id="topKSlider" min="1" max="10" step="1" value="3">
+                        <p class="control-hint">Number of top semantic lore entries retrieved per turn.</p>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="maxTokensSlider">Max Response Tokens</label>
+                            <span class="val-display" id="maxTokensVal">512</span>
+                        </div>
+                        <input type="range" id="maxTokensSlider" min="64" max="2048" step="64" value="512">
+                    </div>
+                </div>
+
+                <!-- Tab 2: RAG Context Inspector -->
+                <div class="tab-pane" id="contextTab">
+                    <p class="context-desc">Canon entries retrieved for the latest generation turn:</p>
+                    <div id="retrievedDocsList" class="retrieved-docs-list">
+                        <div class="empty-state">
+                            <p>No generation performed yet. Generate a scene to inspect retrieved RAG context.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Persona System Prompt -->
+                <div class="tab-pane" id="personaTab">
+                    <label class="section-label">Active System Persona</label>
+                    <div id="personaPreview" class="persona-preview">
+                        Loading persona...
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
